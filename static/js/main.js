@@ -5,7 +5,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsArea = document.getElementById('results-area');
     const errorAlert = document.getElementById('error-alert');
     const spinner = document.getElementById('spinner');
-    const ipCheckServiceSelect = document.getElementById('ip-check-service'); // ★★★ 追加 ★★★
+    const ipCheckServiceSelect = document.getElementById('ip-check-service');
+    const countryFilterContainer = document.getElementById('country-filter-container');
 
     // --- 変数の定義 ---
     let barChart = null;
@@ -14,9 +15,10 @@ document.addEventListener('DOMContentLoaded', () => {
     let infoControl = null;
     let legendControl = null;
     let countriesGeoJson = null;
-    let currentIpList = []; // ★★★ 追加: 最新のIPリストを保持する変数
+    let currentIpList = []; // 最新のIPリスト全体を保持
+    let currentCountrySummary = []; // 最新の国別サマリーを保持
 
-    // ★★★ 追加: IPチェックサービスのURLテンプレート ★★★
+    // IPチェックサービスのURLテンプレート
     const ipCheckServiceUrls = {
         abuseipdb: 'https://www.abuseipdb.com/check/{ip}',
         virustotal: 'https://www.virustotal.com/gui/ip-address/{ip}',
@@ -32,13 +34,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- イベントリスナー ---
     analyzeButton.addEventListener('click', handleAnalysis);
 
-    // ★★★ 追加: 選択リストの変更を検知するイベントリスナー ★★★
+    // IPチェックサービスの選択が変更されたら、現在のフィルターでテーブルを再描画
     ipCheckServiceSelect.addEventListener('change', () => {
-        // 解析結果がすでに表示されている場合のみテーブルを更新
         if (currentIpList.length > 0) {
-            updateTable(currentIpList);
+            handleFilterChange();
         }
     });
+
+    // 国別フィルターのチェックボックスが変更された際のイベントリスナー
+    countryFilterContainer.addEventListener('change', handleFilterChange);
+
 
     /**
      * 解析ボタンがクリックされたときの処理
@@ -95,11 +100,97 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {object} data - サーバーからの解析結果データ
      */
     function displayResults(data) {
-        currentIpList = data.ip_list; // ★★★ 変更: IPリストをグローバル変数に保存
+        currentIpList = data.ip_list;
+        currentCountrySummary = data.country_summary;
+
         updateSummary(data.summary);
-        updateTable(currentIpList); // ★★★ 変更: 保存したIPリストを渡す
-        updateBarChart(data.country_summary);
-        updateMap(data.country_summary);
+        populateCountryFilters(currentCountrySummary);
+
+        // 初回はフィルターをかけずに全件表示
+        updateTable(currentIpList);
+        updateBarChart(currentCountrySummary);
+        updateMap(currentCountrySummary);
+    }
+
+    /**
+     * 国別フィルターのチェックボックスを生成・表示する
+     * @param {Array} countrySummary - 国のリスト
+     */
+    function populateCountryFilters(countrySummary) {
+        countryFilterContainer.innerHTML = ''; // 既存のフィルターをクリア
+        const fragment = document.createDocumentFragment();
+
+        // 「すべて選択/解除」チェックボックス
+        const selectAllDiv = document.createElement('div');
+        selectAllDiv.className = 'form-check';
+        selectAllDiv.innerHTML = `
+            <input class="form-check-input" type="checkbox" value="all" id="check-all-countries" checked>
+            <label class="form-check-label fw-bold" for="check-all-countries">
+                すべて選択/解除
+            </label>
+        `;
+        fragment.appendChild(selectAllDiv);
+
+        // 各国のチェックボックス
+        countrySummary.forEach(country => {
+            const countryDiv = document.createElement('div');
+            countryDiv.className = 'form-check';
+            const countryCode = country.country_code;
+            const countryName = country.country_name;
+            const count = country.count;
+
+            countryDiv.innerHTML = `
+                <input class="form-check-input country-filter-check" type="checkbox" value="${countryCode}" id="check-${countryCode}" checked>
+                <label class="form-check-label" for="check-${countryCode}">
+                    ${countryName} (${count})
+                </label>
+            `;
+            fragment.appendChild(countryDiv);
+        });
+
+        countryFilterContainer.appendChild(fragment);
+    }
+
+    /**
+     * ★★★ 修正: フィルターの変更を処理し、テーブル、グラフ、地図を更新する
+     * @param {Event} [event] - (オプション) changeイベントオブジェクト
+     */
+    function handleFilterChange(event) {
+        if (!countryFilterContainer.hasChildNodes()) return;
+
+        const selectAllCheckbox = document.getElementById('check-all-countries');
+        const countryCheckboxes = countryFilterContainer.querySelectorAll('.country-filter-check');
+
+        // 「すべて選択」がクリックされた場合、他のチェックボックスの状態を同期
+        if (event && event.target.id === 'check-all-countries') {
+            countryCheckboxes.forEach(checkbox => {
+                checkbox.checked = selectAllCheckbox.checked;
+            });
+        }
+
+        // 個別のチェックボックスの状態から「すべて選択」の状態を決定
+        const allChecked = [...countryCheckboxes].every(checkbox => checkbox.checked);
+        selectAllCheckbox.checked = allChecked;
+
+        // 選択されている国コードのリストを取得
+        const selectedCountries = [...countryCheckboxes]
+            .filter(checkbox => checkbox.checked)
+            .map(checkbox => checkbox.value);
+
+        // IPリストをフィルタリング
+        const filteredIpList = currentIpList.filter(ipItem =>
+            selectedCountries.includes(ipItem.country_code)
+        );
+
+        // 国別サマリーもフィルタリング
+        const filteredCountrySummary = currentCountrySummary.filter(countryItem =>
+            selectedCountries.includes(countryItem.country_code)
+        );
+
+        // フィルタリングされたリストでテーブル、グラフ、地図を更新
+        updateTable(filteredIpList);
+        updateBarChart(filteredCountrySummary);
+        updateMap(filteredCountrySummary);
     }
 
     /**
@@ -132,24 +223,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * IPアドレス詳細テーブルを更新
-     * @param {Array} ipList - IPアドレスのリスト
+     * @param {Array} ipList - 表示するIPアドレスのリスト
      */
     function updateTable(ipList) {
         const tableBody = document.getElementById('ip-table-body');
         tableBody.innerHTML = '';
         const fragment = document.createDocumentFragment();
 
-        // ★★★ ここから変更 ★★★
-        // 選択されているサービスの値を取得
         const selectedService = ipCheckServiceSelect.value;
-        // 対応するURLテンプレートを取得
         const urlTemplate = ipCheckServiceUrls[selectedService];
-        // ★★★ 変更ここまで ★★★
 
         ipList.forEach(item => {
             const tr = document.createElement('tr');
-
-            // ★★★ リンク生成部分を動的に変更 ★★★
             const link = urlTemplate.replace('{ip}', item.ip);
             tr.innerHTML = `
                 <td>${item.country_name} (${item.country_code})</td>
@@ -161,7 +246,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tableBody.appendChild(fragment);
     }
 
-    // --- ここから下はLeaflet.jsとECharts関連のコード（変更なし） ---
+    // --- ここから下はLeaflet.jsとECharts関連のコード ---
 
     /**
      * GeoJSONデータを読み込み、地図の初期設定を行う
@@ -231,7 +316,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Leafletでアクセス元マップを更新
+     * ★★★ 修正: Leafletでアクセス元マップを更新 (コード全体を復元)
      */
     function updateMap(countrySummary) {
         if (!map || !countriesGeoJson) return;
@@ -284,6 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
             onEachFeature: onEachFeature
         }).addTo(map);
 
+        // 凡例を更新
         const grades = [0, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8].map(g => Math.ceil(g * maxCount));
         let innerHTML = '';
         for (let i = 0; i < grades.length; i++) {
@@ -313,7 +399,7 @@ document.addEventListener('DOMContentLoaded', () => {
             yAxis: { type: 'category', data: topCountries.map(item => item.country_name) },
             series: [{ name: 'アクセス数', type: 'bar', data: topCountries.map(item => item.count), itemStyle: { color: '#5470c6' } }]
         };
-        barChart.setOption(option);
+        barChart.setOption(option, true); // trueオプションでグラフを完全に再描画
     }
 
     // ウィンドウリサイズ時にグラフと地図をリサイズ
