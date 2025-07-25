@@ -5,23 +5,40 @@ document.addEventListener('DOMContentLoaded', () => {
     const resultsArea = document.getElementById('results-area');
     const errorAlert = document.getElementById('error-alert');
     const spinner = document.getElementById('spinner');
+    const ipCheckServiceSelect = document.getElementById('ip-check-service'); // ★★★ 追加 ★★★
 
-    // --- ★★★ 変数の変更 ★★★ ---
-    // EChartsのインスタンス（棒グラフ用）
+    // --- 変数の定義 ---
     let barChart = null;
-    // Leafletのインスタンスと関連データを保持する変数
     let map = null;
     let geoJsonLayer = null;
     let infoControl = null;
     let legendControl = null;
     let countriesGeoJson = null;
+    let currentIpList = []; // ★★★ 追加: 最新のIPリストを保持する変数
 
-    // --- ★★★ 初期化処理の変更 ★★★ ---
-    // GeoJSONデータを非同期で読み込み、地図を初期化する
+    // ★★★ 追加: IPチェックサービスのURLテンプレート ★★★
+    const ipCheckServiceUrls = {
+        abuseipdb: 'https://www.abuseipdb.com/check/{ip}',
+        virustotal: 'https://www.virustotal.com/gui/ip-address/{ip}',
+        talos: 'https://www.talosintelligence.com/reputation_center/lookup?search={ip}',
+        shodan: 'https://www.shodan.io/host/{ip}',
+        spamhaus: 'https://check.spamhaus.org/results/?query={ip}',
+        greynoise: 'https://viz.greynoise.io/ip/{ip}'
+    };
+
+    // --- 初期化処理 ---
     initializeMapAndData();
 
     // --- イベントリスナー ---
     analyzeButton.addEventListener('click', handleAnalysis);
+
+    // ★★★ 追加: 選択リストの変更を検知するイベントリスナー ★★★
+    ipCheckServiceSelect.addEventListener('change', () => {
+        // 解析結果がすでに表示されている場合のみテーブルを更新
+        if (currentIpList.length > 0) {
+            updateTable(currentIpList);
+        }
+    });
 
     /**
      * 解析ボタンがクリックされたときの処理
@@ -78,10 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
      * @param {object} data - サーバーからの解析結果データ
      */
     function displayResults(data) {
+        currentIpList = data.ip_list; // ★★★ 変更: IPリストをグローバル変数に保存
         updateSummary(data.summary);
-        updateTable(data.ip_list);
+        updateTable(currentIpList); // ★★★ 変更: 保存したIPリストを渡す
         updateBarChart(data.country_summary);
-        // ★★★ Leaflet地図を更新する関数を呼び出す ★★★
         updateMap(data.country_summary);
     }
 
@@ -121,12 +138,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const tableBody = document.getElementById('ip-table-body');
         tableBody.innerHTML = '';
         const fragment = document.createDocumentFragment();
+
+        // ★★★ ここから変更 ★★★
+        // 選択されているサービスの値を取得
+        const selectedService = ipCheckServiceSelect.value;
+        // 対応するURLテンプレートを取得
+        const urlTemplate = ipCheckServiceUrls[selectedService];
+        // ★★★ 変更ここまで ★★★
+
         ipList.forEach(item => {
             const tr = document.createElement('tr');
-            // ★★★ IPアドレスにAbuseIPDBへのリンクを追加 ★★★
+
+            // ★★★ リンク生成部分を動的に変更 ★★★
+            const link = urlTemplate.replace('{ip}', item.ip);
             tr.innerHTML = `
                 <td>${item.country_name} (${item.country_code})</td>
-                <td><a href="https://www.abuseipdb.com/check/${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a></td>
+                <td><a href="${link}" target="_blank" rel="noopener noreferrer">${item.ip}</a></td>
                 <td>${item.count}</td>
             `;
             fragment.appendChild(tr);
@@ -134,7 +161,7 @@ document.addEventListener('DOMContentLoaded', () => {
         tableBody.appendChild(fragment);
     }
 
-    // --- ★★★ ここからLeaflet.js関連のコード ★★★ ---
+    // --- ここから下はLeaflet.jsとECharts関連のコード（変更なし） ---
 
     /**
      * GeoJSONデータを読み込み、地図の初期設定を行う
@@ -183,7 +210,6 @@ document.addEventListener('DOMContentLoaded', () => {
         legendControl = L.control({ position: 'bottomright' });
         legendControl.onAdd = function (map) {
             const div = L.DomUtil.create('div', 'info legend');
-            // 凡例の内容はデータに基づいてupdateMapで更新する
             return div;
         };
         legendControl.addTo(map);
@@ -191,11 +217,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * アクセス数に応じて色を返す
-     * @param {number} count - アクセス数
-     * @param {number} maxCount - 最大アクセス数
      */
     function getColor(count, maxCount) {
-        if (count === 0 || maxCount === 0) return '#f0f0f0'; // データなしは薄いグレー
+        if (count === 0 || maxCount === 0) return '#f0f0f0';
         const intensity = count / maxCount;
         return intensity > 0.8 ? '#800026' :
                intensity > 0.6 ? '#BD0026' :
@@ -208,21 +232,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Leafletでアクセス元マップを更新
-     * @param {Array} countrySummary - 国別の集計データ
      */
     function updateMap(countrySummary) {
         if (!map || !countriesGeoJson) return;
 
-        // 既存のGeoJSONレイヤーがあれば削除
         if (geoJsonLayer) {
             map.removeLayer(geoJsonLayer);
         }
 
-        // 国コードをキーにしたアクセス数マップを作成
         const countryDataMap = new Map(countrySummary.map(item => [item.country_code, item.count]));
         const maxCount = Math.max(...countryDataMap.values(), 0);
 
-        // GeoJSONレイヤーのスタイル設定
         function style(feature) {
             const count = countryDataMap.get(feature.properties['ISO3166-1-Alpha-2']) || 0;
             return {
@@ -235,7 +255,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // 各国に対するインタラクション設定
         function onEachFeature(feature, layer) {
             const countryCode = feature.properties['ISO3166-1-Alpha-2'];
             const access_count = countryDataMap.get(countryCode) || 0;
@@ -244,12 +263,7 @@ document.addEventListener('DOMContentLoaded', () => {
             layer.on({
                 mouseover: (e) => {
                     const layer = e.target;
-                    layer.setStyle({
-                        weight: 3,
-                        color: '#666',
-                        dashArray: '',
-                        fillOpacity: 0.7
-                    });
+                    layer.setStyle({ weight: 3, color: '#666', dashArray: '', fillOpacity: 0.7 });
                     if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
                         layer.bringToFront();
                     }
@@ -265,29 +279,24 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
-        // GeoJSONレイヤーを作成して地図に追加
         geoJsonLayer = L.geoJson(countriesGeoJson, {
             style: style,
             onEachFeature: onEachFeature
         }).addTo(map);
 
-        // 凡例を更新
         const grades = [0, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8].map(g => Math.ceil(g * maxCount));
         let innerHTML = '';
         for (let i = 0; i < grades.length; i++) {
             const from = grades[i];
             const to = grades[i + 1];
             const color = getColor(from + 1, maxCount);
-            innerHTML +=
-                `<i style="background:${color}"></i> ` +
-                from + (to ? `&ndash;${to}<br>` : '+');
+            innerHTML += `<i style="background:${color}"></i> ` + from + (to ? `&ndash;${to}<br>` : '+');
         }
         legendControl.getContainer().innerHTML = innerHTML;
     }
 
     /**
      * EChartsで国別アクセス数の棒グラフを更新
-     * @param {Array} countrySummary - 国別の集計データ
      */
     function updateBarChart(countrySummary) {
         const chartDom = document.getElementById('country-chart');
@@ -298,29 +307,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const topCountries = countrySummary.slice(0, 15).reverse();
 
         const option = {
-            tooltip: {
-                trigger: 'axis',
-                axisPointer: { type: 'shadow' }
-            },
-            grid: {
-                left: '3%',
-                right: '4%',
-                bottom: '3%',
-                containLabel: true
-            },
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
             xAxis: { type: 'value', boundaryGap: [0, 0.01] },
-            yAxis: {
-                type: 'category',
-                data: topCountries.map(item => item.country_name)
-            },
-            series: [{
-                name: 'アクセス数',
-                type: 'bar',
-                data: topCountries.map(item => item.count),
-                itemStyle: {
-                    color: '#5470c6'
-                }
-            }]
+            yAxis: { type: 'category', data: topCountries.map(item => item.country_name) },
+            series: [{ name: 'アクセス数', type: 'bar', data: topCountries.map(item => item.count), itemStyle: { color: '#5470c6' } }]
         };
         barChart.setOption(option);
     }
@@ -331,7 +322,6 @@ document.addEventListener('DOMContentLoaded', () => {
             barChart.resize();
         }
         if (map) {
-            // Leafletは通常自動でリサイズされるが、コンテナサイズが変更されたことを明示的に伝える
             map.invalidateSize();
         }
     });
