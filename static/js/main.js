@@ -123,9 +123,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const fragment = document.createDocumentFragment();
         ipList.forEach(item => {
             const tr = document.createElement('tr');
+            // ★★★ IPアドレスにAbuseIPDBへのリンクを追加 ★★★
             tr.innerHTML = `
                 <td>${item.country_name} (${item.country_code})</td>
-                <td>${item.ip}</td>
+                <td><a href="https://www.abuseipdb.com/check/${item.ip}" target="_blank" rel="noopener noreferrer">${item.ip}</a></td>
                 <td>${item.count}</td>
             `;
             fragment.appendChild(tr);
