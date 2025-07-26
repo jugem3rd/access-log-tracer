@@ -1,5 +1,4 @@
 document.addEventListener('DOMContentLoaded', () => {
-    // DOM要素の取得
     const analyzeButton = document.getElementById('analyze-button');
     const logTextarea = document.getElementById('log-textarea');
     const resultsArea = document.getElementById('results-area');
@@ -8,17 +7,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const ipCheckServiceSelect = document.getElementById('ip-check-service');
     const countryFilterContainer = document.getElementById('country-filter-container');
 
-    // --- 変数の定義 ---
     let barChart = null;
     let map = null;
     let geoJsonLayer = null;
     let infoControl = null;
     let legendControl = null;
     let countriesGeoJson = null;
-    let currentIpList = []; // 最新のIPリスト全体を保持
-    let currentCountrySummary = []; // 最新の国別サマリーを保持
+    let currentIpList = [];
+    let currentCountrySummary = [];
 
-    // IPチェックサービスのURLテンプレート
     const ipCheckServiceUrls = {
         abuseipdb: 'https://www.abuseipdb.com/check/{ip}',
         virustotal: 'https://www.virustotal.com/gui/ip-address/{ip}',
@@ -28,26 +25,18 @@ document.addEventListener('DOMContentLoaded', () => {
         greynoise: 'https://viz.greynoise.io/ip/{ip}'
     };
 
-    // --- 初期化処理 ---
     initializeMapAndData();
 
-    // --- イベントリスナー ---
     analyzeButton.addEventListener('click', handleAnalysis);
 
-    // IPチェックサービスの選択が変更されたら、現在のフィルターでテーブルを再描画
     ipCheckServiceSelect.addEventListener('change', () => {
         if (currentIpList.length > 0) {
             handleFilterChange();
         }
     });
 
-    // 国別フィルターのチェックボックスが変更された際のイベントリスナー
     countryFilterContainer.addEventListener('change', handleFilterChange);
 
-
-    /**
-     * 解析ボタンがクリックされたときの処理
-     */
     async function handleAnalysis() {
         const logText = logTextarea.value;
         setLoadingState(true);
@@ -70,10 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * ローディング状態のUI切り替え
-     * @param {boolean} isLoading - ローディング中かどうか
-     */
     function setLoadingState(isLoading) {
         if (isLoading) {
             resultsArea.classList.add('d-none');
@@ -86,19 +71,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * エラーメッセージの表示
-     * @param {string} message - 表示するエラーメッセージ
-     */
     function showError(message) {
         errorAlert.textContent = message;
         errorAlert.classList.remove('d-none');
     }
 
-    /**
-     * 解析結果を各セクションに表示する
-     * @param {object} data - サーバーからの解析結果データ
-     */
     function displayResults(data) {
         currentIpList = data.ip_list;
         currentCountrySummary = data.country_summary;
@@ -106,21 +83,15 @@ document.addEventListener('DOMContentLoaded', () => {
         updateSummary(data.summary);
         populateCountryFilters(currentCountrySummary);
 
-        // 初回はフィルターをかけずに全件表示
         updateTable(currentIpList);
         updateBarChart(currentCountrySummary);
         updateMap(currentCountrySummary);
     }
 
-    /**
-     * 国別フィルターのチェックボックスを生成・表示する
-     * @param {Array} countrySummary - 国のリスト
-     */
     function populateCountryFilters(countrySummary) {
-        countryFilterContainer.innerHTML = ''; // 既存のフィルターをクリア
+        countryFilterContainer.innerHTML = '';
         const fragment = document.createDocumentFragment();
 
-        // 「すべて選択/解除」チェックボックス
         const selectAllDiv = document.createElement('div');
         selectAllDiv.className = 'form-check';
         selectAllDiv.innerHTML = `
@@ -131,7 +102,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
         fragment.appendChild(selectAllDiv);
 
-        // 各国のチェックボックス
         countrySummary.forEach(country => {
             const countryDiv = document.createElement('div');
             countryDiv.className = 'form-check';
@@ -151,52 +121,38 @@ document.addEventListener('DOMContentLoaded', () => {
         countryFilterContainer.appendChild(fragment);
     }
 
-    /**
-     * ★★★ 修正: フィルターの変更を処理し、テーブル、グラフ、地図を更新する
-     * @param {Event} [event] - (オプション) changeイベントオブジェクト
-     */
     function handleFilterChange(event) {
         if (!countryFilterContainer.hasChildNodes()) return;
 
         const selectAllCheckbox = document.getElementById('check-all-countries');
         const countryCheckboxes = countryFilterContainer.querySelectorAll('.country-filter-check');
 
-        // 「すべて選択」がクリックされた場合、他のチェックボックスの状態を同期
         if (event && event.target.id === 'check-all-countries') {
             countryCheckboxes.forEach(checkbox => {
                 checkbox.checked = selectAllCheckbox.checked;
             });
         }
 
-        // 個別のチェックボックスの状態から「すべて選択」の状態を決定
         const allChecked = [...countryCheckboxes].every(checkbox => checkbox.checked);
         selectAllCheckbox.checked = allChecked;
 
-        // 選択されている国コードのリストを取得
         const selectedCountries = [...countryCheckboxes]
             .filter(checkbox => checkbox.checked)
             .map(checkbox => checkbox.value);
 
-        // IPリストをフィルタリング
         const filteredIpList = currentIpList.filter(ipItem =>
             selectedCountries.includes(ipItem.country_code)
         );
 
-        // 国別サマリーもフィルタリング
         const filteredCountrySummary = currentCountrySummary.filter(countryItem =>
             selectedCountries.includes(countryItem.country_code)
         );
 
-        // フィルタリングされたリストでテーブル、グラフ、地図を更新
         updateTable(filteredIpList);
         updateBarChart(filteredCountrySummary);
         updateMap(filteredCountrySummary);
     }
 
-    /**
-     * サマリーセクションを更新
-     * @param {object} summary - サマリーデータ
-     */
     function updateSummary(summary) {
         const summarySection = document.getElementById('summary-section');
         summarySection.innerHTML = `
@@ -221,10 +177,6 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
     }
 
-    /**
-     * IPアドレス詳細テーブルを更新
-     * @param {Array} ipList - 表示するIPアドレスのリスト
-     */
     function updateTable(ipList) {
         const tableBody = document.getElementById('ip-table-body');
         tableBody.innerHTML = '';
@@ -246,11 +198,6 @@ document.addEventListener('DOMContentLoaded', () => {
         tableBody.appendChild(fragment);
     }
 
-    // --- ここから下はLeaflet.jsとECharts関連のコード ---
-
-    /**
-     * GeoJSONデータを読み込み、地図の初期設定を行う
-     */
     async function initializeMapAndData() {
         try {
             const response = await fetch('/static/data/countries.geojson');
@@ -263,11 +210,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    /**
-     * Leaflet地図を初期化する
-     */
     function initializeMap() {
-        if (map) return; // すでに初期化済みなら何もしない
+        if (map) return;
 
         map = L.map('world-map').setView([20, 0], 2);
 
@@ -277,7 +221,6 @@ document.addEventListener('DOMContentLoaded', () => {
             maxZoom: 10
         }).addTo(map);
 
-        // 右上の情報表示コントロール
         infoControl = L.control();
         infoControl.onAdd = function (map) {
             this._div = L.DomUtil.create('div', 'info-tooltip');
@@ -291,7 +234,6 @@ document.addEventListener('DOMContentLoaded', () => {
         };
         infoControl.addTo(map);
 
-        // 右下の凡例コントロール
         legendControl = L.control({ position: 'bottomright' });
         legendControl.onAdd = function (map) {
             const div = L.DomUtil.create('div', 'info legend');
@@ -300,24 +242,18 @@ document.addEventListener('DOMContentLoaded', () => {
         legendControl.addTo(map);
     }
 
-    /**
-     * アクセス数に応じて色を返す
-     */
     function getColor(count, maxCount) {
         if (count === 0 || maxCount === 0) return '#f0f0f0';
         const intensity = count / maxCount;
         return intensity > 0.8 ? '#800026' :
-               intensity > 0.6 ? '#BD0026' :
-               intensity > 0.4 ? '#E31A1C' :
-               intensity > 0.2 ? '#FC4E2A' :
-               intensity > 0.1 ? '#FD8D3C' :
-               intensity > 0.05 ? '#FEB24C' :
-               '#FED976';
+            intensity > 0.6 ? '#BD0026' :
+                intensity > 0.4 ? '#E31A1C' :
+                    intensity > 0.2 ? '#FC4E2A' :
+                        intensity > 0.1 ? '#FD8D3C' :
+                            intensity > 0.05 ? '#FEB24C' :
+                                '#FED976';
     }
 
-    /**
-     * ★★★ 修正: Leafletでアクセス元マップを更新 (コード全体を復元)
-     */
     function updateMap(countrySummary) {
         if (!map || !countriesGeoJson) return;
 
@@ -369,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
             onEachFeature: onEachFeature
         }).addTo(map);
 
-        // 凡例を更新
         const grades = [0, 0.05, 0.1, 0.2, 0.4, 0.6, 0.8].map(g => Math.ceil(g * maxCount));
         let innerHTML = '';
         for (let i = 0; i < grades.length; i++) {
@@ -381,9 +316,6 @@ document.addEventListener('DOMContentLoaded', () => {
         legendControl.getContainer().innerHTML = innerHTML;
     }
 
-    /**
-     * EChartsで国別アクセス数の棒グラフを更新
-     */
     function updateBarChart(countrySummary) {
         const chartDom = document.getElementById('country-chart');
         if (!barChart) {
@@ -399,10 +331,9 @@ document.addEventListener('DOMContentLoaded', () => {
             yAxis: { type: 'category', data: topCountries.map(item => item.country_name) },
             series: [{ name: 'アクセス数', type: 'bar', data: topCountries.map(item => item.count), itemStyle: { color: '#5470c6' } }]
         };
-        barChart.setOption(option, true); // trueオプションでグラフを完全に再描画
+        barChart.setOption(option, true);
     }
 
-    // ウィンドウリサイズ時にグラフと地図をリサイズ
     window.addEventListener('resize', () => {
         if (barChart) {
             barChart.resize();
