@@ -84,8 +84,12 @@ document.addEventListener('DOMContentLoaded', () => {
         populateCountryFilters(currentCountrySummary);
 
         updateTable(currentIpList);
-        updateBarChart(currentCountrySummary);
-        updateMap(currentCountrySummary);
+
+        // グラフ・地図の更新を少し遅延させてDOMの準備を確実にする
+        setTimeout(() => {
+            updateBarChart(currentCountrySummary);
+            updateMap(currentCountrySummary);
+        }, 100);
     }
 
     function populateCountryFilters(countrySummary) {
@@ -144,13 +148,10 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedCountries.includes(ipItem.country_code)
         );
 
-        const filteredCountrySummary = currentCountrySummary.filter(countryItem =>
-            selectedCountries.includes(countryItem.country_code)
-        );
-
+        // 棒グラフ・地図はフィルターせず全件表示
         updateTable(filteredIpList);
-        updateBarChart(filteredCountrySummary);
-        updateMap(filteredCountrySummary);
+        updateBarChart(currentCountrySummary);
+        updateMap(currentCountrySummary);
     }
 
     function updateSummary(summary) {
@@ -213,6 +214,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function initializeMap() {
         if (map) return;
 
+        const mapContainer = document.getElementById('world-map');
+        if (!mapContainer) {
+            console.error('Map container not found');
+            return;
+        }
+
         map = L.map('world-map').setView([20, 0], 2);
 
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -255,7 +262,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateMap(countrySummary) {
-        if (!map || !countriesGeoJson) return;
+        if (!map || !countriesGeoJson) {
+            console.warn('Map or GeoJSON not initialized');
+            return;
+        }
+
+        if (!Array.isArray(countrySummary) || countrySummary.length === 0) {
+            console.warn('No country data to display');
+            return;
+        }
 
         if (geoJsonLayer) {
             map.removeLayer(geoJsonLayer);
@@ -318,6 +333,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateBarChart(countrySummary) {
         const chartDom = document.getElementById('country-chart');
+        if (!chartDom) {
+            console.error('Chart container not found');
+            return;
+        }
+
+        if (!Array.isArray(countrySummary) || countrySummary.length === 0) {
+            console.warn('No country data to display in chart');
+            return;
+        }
+
         if (!barChart) {
             barChart = echarts.init(chartDom);
         }
@@ -331,15 +356,28 @@ document.addEventListener('DOMContentLoaded', () => {
             yAxis: { type: 'category', data: topCountries.map(item => item.country_name) },
             series: [{ name: 'アクセス数', type: 'bar', data: topCountries.map(item => item.count), itemStyle: { color: '#5470c6' } }]
         };
-        barChart.setOption(option, true);
+
+        try {
+            barChart.setOption(option, true);
+        } catch (error) {
+            console.error('Failed to update chart:', error);
+        }
     }
 
     window.addEventListener('resize', () => {
         if (barChart) {
-            barChart.resize();
+            try {
+                barChart.resize();
+            } catch (error) {
+                console.error('Failed to resize chart:', error);
+            }
         }
         if (map) {
-            map.invalidateSize();
+            try {
+                map.invalidateSize();
+            } catch (error) {
+                console.error('Failed to resize map:', error);
+            }
         }
     });
 });
