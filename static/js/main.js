@@ -16,6 +16,43 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentIpList = [];
     let currentCountrySummary = [];
 
+    // 翻訳テキスト
+    const translations = {
+        ja: {
+            totalLines: '総行数',
+            uniqueIps: 'ユニークIP数',
+            totalIps: '延べIP数',
+            selectAll: 'すべて選択/解除',
+            serverError: 'サーバーでエラーが発生しました。',
+            mapDataError: '地図データの読み込みに失敗しました。',
+            hoverCountry: '国にカーソルを合わせてください',
+            accessCount: '件',
+            accessOrigin: 'アクセス元'
+        },
+        en: {
+            totalLines: 'Total Lines',
+            uniqueIps: 'Unique IPs',
+            totalIps: 'Total IPs',
+            selectAll: 'Select/Deselect All',
+            serverError: 'An error occurred on the server.',
+            mapDataError: 'Failed to load map data.',
+            hoverCountry: 'Hover over a country',
+            accessCount: 'counts',
+            accessOrigin: 'Access Origin'
+        }
+    };
+
+    // 現在の言語を取得
+    function getCurrentLanguage() {
+        return document.documentElement.lang || 'ja';
+    }
+
+    // 翻訳テキストを取得
+    function t(key) {
+        const lang = getCurrentLanguage();
+        return translations[lang]?.[key] || key;
+    }
+
     const ipCheckServiceUrls = {
         abuseipdb: 'https://www.abuseipdb.com/check/{ip}',
         virustotal: 'https://www.virustotal.com/gui/ip-address/{ip}',
@@ -48,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const result = await response.json();
             if (!response.ok) {
-                throw new Error(result.error || 'サーバーでエラーが発生しました。');
+                throw new Error(result.error || t('serverError'));
             }
             displayResults(result);
             resultsArea.classList.remove('d-none');
@@ -85,7 +122,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateTable(currentIpList);
 
-        // グラフ・地図の更新を少し遅延させてDOMの準備を確実にする
         setTimeout(() => {
             updateBarChart(currentCountrySummary);
             updateMap(currentCountrySummary);
@@ -101,7 +137,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectAllDiv.innerHTML = `
             <input class="form-check-input" type="checkbox" value="all" id="check-all-countries" checked>
             <label class="form-check-label fw-bold" for="check-all-countries">
-                すべて選択/解除
+                ${t('selectAll')}
             </label>
         `;
         fragment.appendChild(selectAllDiv);
@@ -148,7 +184,6 @@ document.addEventListener('DOMContentLoaded', () => {
             selectedCountries.includes(ipItem.country_code)
         );
 
-        // 棒グラフ・地図はフィルターせず全件表示
         updateTable(filteredIpList);
         updateBarChart(currentCountrySummary);
         updateMap(currentCountrySummary);
@@ -160,19 +195,19 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="col-md-4 mb-2">
                 <div class="card bg-light p-2"><div class="card-body">
                     <h5 class="card-title">${summary.total_lines}</h5>
-                    <p class="card-text">総行数</p>
+                    <p class="card-text">${t('totalLines')}</p>
                 </div></div>
             </div>
             <div class="col-md-4 mb-2">
                 <div class="card bg-light p-2"><div class="card-body">
                     <h5 class="card-title">${summary.unique_ips_found}</h5>
-                    <p class="card-text">ユニークIP数</p>
+                    <p class="card-text">${t('uniqueIps')}</p>
                 </div></div>
             </div>
             <div class="col-md-4 mb-2">
                 <div class="card bg-light p-2"><div class="card-body">
                     <h5 class="card-title">${summary.total_ips_found}</h5>
-                    <p class="card-text">延べIP数</p>
+                    <p class="card-text">${t('totalIps')}</p>
                 </div></div>
             </div>
         `;
@@ -207,7 +242,7 @@ document.addEventListener('DOMContentLoaded', () => {
             initializeMap();
         } catch (error) {
             console.error("Failed to load GeoJSON data:", error);
-            showError('地図データの読み込みに失敗しました。');
+            showError(t('mapDataError'));
         }
     }
 
@@ -219,6 +254,9 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error('Map container not found');
             return;
         }
+
+        mapContainer.style.height = '500px';
+        mapContainer.style.width = '100%';
 
         map = L.map('world-map').setView([20, 0], 2);
 
@@ -235,9 +273,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return this._div;
         };
         infoControl.update = function (props) {
-            this._div.innerHTML = '<h4>アクセス元</h4>' + (props ?
-                `<b>${props.name_ja || props.name}</b><br />${props.access_count || 0} 件` :
-                '国にカーソルを合わせてください');
+            this._div.innerHTML = `<h4>${t('accessOrigin')}</h4>` + (props ?
+                `<b>${props.name_ja || props.name}</b><br />${props.access_count || 0} ${t('accessCount')}` :
+                t('hoverCountry'));
         };
         infoControl.addTo(map);
 
@@ -247,6 +285,12 @@ document.addEventListener('DOMContentLoaded', () => {
             return div;
         };
         legendControl.addTo(map);
+
+        setTimeout(() => {
+            if (map) {
+                map.invalidateSize();
+            }
+        }, 100);
     }
 
     function getColor(count, maxCount) {
@@ -354,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
             grid: { left: '3%', right: '4%', bottom: '3%', containLabel: true },
             xAxis: { type: 'value', boundaryGap: [0, 0.01] },
             yAxis: { type: 'category', data: topCountries.map(item => item.country_name) },
-            series: [{ name: 'アクセス数', type: 'bar', data: topCountries.map(item => item.count), itemStyle: { color: '#5470c6' } }]
+            series: [{ name: t('accessCount'), type: 'bar', data: topCountries.map(item => item.count), itemStyle: { color: '#5470c6' } }]
         };
 
         try {

@@ -1,0 +1,86 @@
+# English translations for PROJECT.
+# Copyright (C) 2025 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2025-01-01 00:00+0000\n"
+"PO-Revision-Date: 2025-01-01 00:00+0000\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: en\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.12.1\n"
+
+#: templates/index.html:6
+msgid "Access Log Tracer"
+msgstr "Access Log Tracer"
+
+#: templates/index.html:25
+msgid "Extract IP addresses from logs and visualize access patterns by country."
+msgstr "Extract IP addresses from logs and visualize access patterns by country."
+
+#: templates/index.html:35
+msgid "Paste log text here"
+msgstr "Paste log text here"
+
+#: templates/index.html:40
+msgid "Analyze"
+msgstr "Analyze"
+
+#: templates/index.html:50
+msgid "Analysis Summary"
+msgstr "Analysis Summary"
+
+#: templates/index.html:55
+msgid "Access Origin Map"
+msgstr "Access Origin Map"
+
+#: templates/index.html:65
+msgid "Country Filter"
+msgstr "Country Filter"
+
+#: templates/index.html:75
+msgid "Country Access Count"
+msgstr "Country Access Count"
+
+#: templates/index.html:85
+msgid "IP Address Access Count"
+msgstr "IP Address Access Count"
+
+#: templates/index.html:90
+msgid "IP Check Service:"
+msgstr "IP Check Service:"
+
+#: templates/index.html:100
+msgid "Country"
+msgstr "Country"
+
+#: templates/index.html:101
+msgid "IP Address"
+msgstr "IP Address"
+
+#: templates/index.html:102
+msgid "Count"
+msgstr "Count"
+
+#: app.py:25
+msgid "Missing log_text parameter"
+msgstr "Missing log_text parameter"
+
+#: app.py:30
+msgid "Log text is empty"
+msgstr "Log text is empty"
+
+#: app.py:37
+msgid "No IP addresses found in the provided text."
+msgstr "No IP addresses found in the provided text."
+
+#: app.py:42
+msgid "An internal server error occurred."
+msgstr "An internal server error occurred."
+

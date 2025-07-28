@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="{{ get_locale() }}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Access Log Tracer</title>
+    <title>{{ _('Access Log Tracer') }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <!-- ★★★ Leaflet.jsのCSSを追加 ★★★ -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -58,26 +58,44 @@
             box-shadow: 0 0 15px rgba(0,0,0,0.2);
             border-radius: 5px;
         }
+        .language-switcher {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+        }
     </style>
 </head>
 <body>
     <div class="container mt-4">
+        <div class="language-switcher">
+            <div class="btn-group" role="group">
+                <a href="{{ url_for('change_language', language='ja') }}" 
+                   class="btn btn-outline-primary btn-sm {{ 'active' if get_locale() == 'ja' else '' }}">
+                    日本語
+                </a>
+                <a href="{{ url_for('change_language', language='en') }}" 
+                   class="btn btn-outline-primary btn-sm {{ 'active' if get_locale() == 'en' else '' }}">
+                    English
+                </a>
+            </div>
+        </div>
+
         <header class="text-center mb-4">
-            <h1>Access Log Tracer</h1>
-            <p class="lead">ログからIPアドレスを抽出し、国別のアクセス傾向を可視化します。</p>
+            <h1>{{ _('Access Log Tracer') }}</h1>
+            <p class="lead">{{ _('Extract IP addresses from logs and visualize access patterns by country.') }}</p>
         </header>
 
         <main>
             <div class="card">
                 <div class="card-body">
                     <div class="mb-3">
-                        <label for="log-textarea" class="form-label">ログテキストをここに貼り付け</label>
+                        <label for="log-textarea" class="form-label">{{ _('Paste log text here') }}</label>
                         <textarea class="form-control" id="log-textarea" rows="10"></textarea>
                     </div>
                     <div class="d-flex justify-content-center">
                         <button class="btn btn-primary" id="analyze-button">
                             <span id="spinner" class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
-                            解析実行
+                            {{ _('Analyze') }}
                         </button>
                     </div>
                 </div>
@@ -87,13 +105,13 @@
 
             <div id="results-area" class="d-none">
                 <!-- サマリー -->
-                <h2 class="mt-5 mb-3 text-center">解析サマリー</h2>
+                <h2 class="mt-5 mb-3 text-center">{{ _('Analysis Summary') }}</h2>
                 <div id="summary-section" class="row text-center"></div>
 
                 <div class="row mt-4">
                     <!-- 地図 -->
                     <div class="col-12 mb-4">
-                        <h2 class="text-center mb-3">アクセス元マップ</h2>
+                        <h2 class="text-center mb-3">{{ _('Access Origin Map') }}</h2>
                         <div class="card">
                             <div class="card-body">
                                 <!-- ★★★ このdivがLeaflet地図のコンテナになります ★★★ -->
@@ -107,7 +125,7 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
-                                国別フィルター
+                                {{ _('Country Filter') }}
                             </div>
                             <div class="card-body">
                                 <div id="country-filter-container" class="d-flex flex-wrap" style="gap: 0.5rem 1.5rem; max-height: 150px; overflow-y: auto;">
@@ -121,7 +139,7 @@
                 <div class="row mt-4">
                     <!-- 棒グラフ -->
                     <div class="col-lg-6 mb-4">
-                        <h2 class="text-center mb-3">国別アクセス数</h2>
+                        <h2 class="text-center mb-3">{{ _('Country Access Count') }}</h2>
                         <div class="card">
                             <div class="card-body">
                                 <div id="country-chart" style="height: 400px;"></div>
@@ -130,11 +148,11 @@
                     </div>
                     <!-- IPリスト -->
                 <div class="col-lg-6 mb-4">
-                    <h2 class="text-center mb-3">IPアドレス別アクセス数</h2>
+                    <h2 class="text-center mb-3">{{ _('IP Address Access Count') }}</h2>
                     <div class="card">
                         <div class="card-body d-flex flex-column" style="height: 442px;">
                             <div class="mb-3">
-                                <label for="ip-check-service" class="form-label">IPチェックサービス:</label>
+                                <label for="ip-check-service" class="form-label">{{ _('IP Check Service:') }}</label>
                                 <select class="form-select" id="ip-check-service">
                                     <option value="abuseipdb" selected>AbuseIPDB</option>
                                     <option value="virustotal">VirusTotal</option>
@@ -148,9 +166,9 @@
                                 <table class="table table-striped table-hover">
                                     <thead>
                                         <tr>
-                                            <th>国</th>
-                                            <th>IPアドレス</th>
-                                            <th>回数</th>
+                                            <th>{{ _('Country') }}</th>
+                                            <th>{{ _('IP Address') }}</th>
+                                            <th>{{ _('Count') }}</th>
                                         </tr>
                                     </thead>
                                     <tbody id="ip-table-body">
@@ -166,7 +184,7 @@
         </main>
 
         <footer class="text-center text-muted mt-5 mb-3">
-            <p>&copy; 2025 Access Log Tracer</p>
+            <p>&copy; 2025 {{ _('Access Log Tracer') }}</p>
         </footer>
     </div>
 
