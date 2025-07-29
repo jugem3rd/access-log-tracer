@@ -83,6 +83,7 @@ access-log-tracer/
 ## ライセンス
 - 本アプリのソースコードは[MIT License](LICENSE)の下で公開されています。
 - GeoLite2データベースはMaxMind社のライセンスに従ってご利用ください。
+- サードパーティライセンスの詳細は[LICENSE-THIRD-PARTY](LICENSE-THIRD-PARTY)をご確認ください。
 
 ## 貢献
 プルリクエストやIssueの報告を歓迎します。貢献していただく前に、以下の点をご確認ください：
@@ -181,6 +182,7 @@ access-log-tracer/
 ## License
 - The source code of this application is published under the [MIT License](LICENSE).
 - Please use the GeoLite2 database in accordance with MaxMind's license.
+- For details on third-party licenses, please see [LICENSE-THIRD-PARTY](LICENSE-THIRD-PARTY).
 
 ## Contributing
 We welcome pull requests and issue reports. Before contributing, please check the following:

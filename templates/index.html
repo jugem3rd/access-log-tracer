@@ -185,6 +185,18 @@
 
         <footer class="text-center text-muted mt-5 mb-3">
             <p>&copy; 2025 {{ _('Jugem3rd') }}</p>
+            <div class="mt-2 small">
+                <p class="mb-1">{{ _('This application uses MaxMind\'s GeoLite2 Country database for IP geolocation.') }}</p>
+                <p class="mb-1">{{ _('GeoLite2 data is provided by MaxMind under their license terms.') }}</p>
+                <p class="mb-0">
+                    <a href="https://www.maxmind.com/en/geolite2/eula" target="_blank" class="text-muted">
+                        {{ _('GeoLite2 License') }}
+                    </a> | 
+                    <a href="{{ url_for('static', filename='LICENSE-THIRD-PARTY') }}" target="_blank" class="text-muted">
+                        {{ _('Third-party Licenses') }}
+                    </a>
+                </p>
+            </div>
         </footer>
     </div>
 

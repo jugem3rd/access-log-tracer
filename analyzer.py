@@ -1,9 +1,28 @@
+"""
+Access Log Tracer - IP Address Analysis Tool
+
+This module provides functionality to extract IP addresses from log text and
+determine their geographic location using MaxMind's GeoLite2 database.
+
+IMPORTANT COMMERCIAL USE NOTICE:
+- This application uses MaxMind's GeoLite2 Country database
+- For commercial use, please review MaxMind's current terms of service
+- GeoLite2 data is provided by MaxMind under their license terms
+- Consider upgrading to GeoIP2 for production commercial use
+
+Data Source: MaxMind GeoLite2 Country Database
+License: MaxMind GeoLite2 License
+(see https://www.maxmind.com/en/geolite2/eula)
+"""
+
 import re
 import ipaddress
 from collections import Counter, defaultdict
 import geoip2.database
 import geoip2.errors
 
+# GeoLite2 database configuration
+# Note: For commercial use, consider upgrading to GeoIP2
 IP_PATTERN = re.compile(r"\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b")
 DB_PATH = "GeoLite2-Country.mmdb"
 

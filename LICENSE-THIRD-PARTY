@@ -1,0 +1,42 @@
+# Third-Party Licenses
+
+This document lists the licenses for third-party software and data used in this project.
+
+## MaxMind GeoLite2 Country Database
+
+### Data Source
+- **Product**: GeoLite2 Country Database
+- **Provider**: MaxMind Inc.
+- **Website**: https://www.maxmind.com/
+
+### License Information
+- **License Type**: MaxMind GeoLite2 License
+- **License URL**: https://www.maxmind.com/en/geolite2/eula
+- **Usage**: IP geolocation for determining country information
+
+### Important Notes for Commercial Use
+1. **License Compliance**: Users must comply with MaxMind's GeoLite2 license terms
+2. **Data Updates**: GeoLite2 data may not be as current as paid GeoIP2 services
+3. **Redistribution**: The database file itself cannot be redistributed
+4. **Attribution**: Proper attribution to MaxMind is required
+
+### Commercial Use Considerations
+- For production commercial applications, consider upgrading to GeoIP2
+- Review MaxMind's current terms of service for commercial use
+- Ensure compliance with data protection regulations in your jurisdiction
+
+## Other Dependencies
+
+### Python Packages
+- **Flask**: BSD License
+- **geoip2**: Apache License 2.0
+- **Flask-Babel**: BSD License
+
+### Frontend Libraries
+- **Bootstrap**: MIT License
+- **Leaflet.js**: BSD License
+- **ECharts**: Apache License 2.0
+
+---
+
+For questions about third-party licenses, please refer to the respective license documents or contact the original authors. 

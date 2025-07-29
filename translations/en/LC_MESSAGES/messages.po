@@ -84,3 +84,19 @@ msgstr "No IP addresses found in the provided text."
 msgid "An internal server error occurred."
 msgstr "An internal server error occurred."
 
+#: templates/index.html:175
+msgid "This application uses MaxMind's GeoLite2 Country database for IP geolocation."
+msgstr "This application uses MaxMind's GeoLite2 Country database for IP geolocation."
+
+#: templates/index.html:176
+msgid "GeoLite2 data is provided by MaxMind under their license terms."
+msgstr "GeoLite2 data is provided by MaxMind under their license terms."
+
+#: templates/index.html:179
+msgid "GeoLite2 License"
+msgstr "GeoLite2 License"
+
+#: templates/index.html:182
+msgid "Third-party Licenses"
+msgstr "Third-party Licenses"
+
