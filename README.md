@@ -4,6 +4,8 @@
 
 Access Log Tracerは、任意のログテキストからIPアドレスを抽出し、国別のアクセス傾向を可視化するWebアプリケーションです。IPアドレスごとの出現回数や国別のアクセス数をグラフや地図で直感的に確認できます。
 
+デモサイトは[こちら](https://analyzer.oymt-dev.com)。 
+
 ## 主な機能
 - ログテキストからIPv4アドレスを抽出
 - GeoLite2データベースを用いた国判定
@@ -102,6 +104,8 @@ access-log-tracer/
 ## Overview
 
 Access Log Tracer is a web application that extracts IP addresses from arbitrary log text and visualizes country-based access trends. You can intuitively check the frequency of IP addresses and country-based access counts through graphs and maps.
+
+Demo page is [here](https://analyzer.oymt-dev.com).
 
 ## Main Features
 - Extract IPv4 addresses from log text
