@@ -68,6 +68,42 @@ msgstr "IP Address"
 msgid "Count"
 msgstr "Count"
 
+#: templates/index.html:103
+msgid "Status"
+msgstr "Status"
+
+#: templates/index.html:140
+msgid "Caution IP Addresses Detected"
+msgstr "Caution IP Addresses Detected"
+
+#: templates/index.html:150
+msgid "IP Addresses Detected by URLhaus"
+msgstr "IP Addresses Detected by URLhaus"
+
+#: templates/index.html:155
+msgid "Caution:"
+msgstr "Caution:"
+
+#: templates/index.html:155
+msgid "The following IP addresses have been detected as malicious by URLhaus:"
+msgstr "The following IP addresses have been detected as malicious by URLhaus:"
+
+#: templates/index.html:194
+msgid "Status Filter:"
+msgstr "Status Filter:"
+
+#: templates/index.html:196
+msgid "All"
+msgstr "All"
+
+#: templates/index.html:197
+msgid "Normal"
+msgstr "Normal"
+
+#: templates/index.html:198
+msgid "Caution"
+msgstr "Caution"
+
 #: app.py:25
 msgid "Missing log_text parameter"
 msgstr "Missing log_text parameter"

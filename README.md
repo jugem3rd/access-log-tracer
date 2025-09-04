@@ -12,6 +12,8 @@ Access Log Tracerは、任意のログテキストからIPアドレスを抽出�
 - 国別・IP別のアクセス集計
 - 棒グラフ・世界地図ヒートマップによる可視化
 - 国別フィルターや外部IPチェックサービス連携
+- **URLhausによる悪意のあるIPアドレス検出機能**
+- **IPアドレスのステータス表示（正常/要注意）**
 - **日本語・英語の多言語対応**
 
 ## 必要要件
@@ -19,6 +21,7 @@ Access Log Tracerは、任意のログテキストからIPアドレスを抽出�
 - Flask
 - geoip2
 - Flask-Babel
+- requests（URLhausデータ取得用）
 
 ## セットアップ手順
 
@@ -51,6 +54,25 @@ Access Log Tracerは、任意のログテキストからIPアドレスを抽出�
     ```
     - ブラウザで `http://localhost:5000` にアクセスしてください。
 
+## 新機能：URLhaus悪意のあるIPアドレス検出
+
+本アプリは、URLhausのデータベースと連携して悪意のあるIPアドレスを検出する機能を搭載しています：
+
+### 検出機能
+- **リアルタイム検出**: 解析実行時にURLhausのデータベースから最新の悪意のあるIPアドレスリストを取得
+- **自動マッチング**: ログから抽出されたIPアドレスとURLhausのデータベースを自動で照合
+- **視覚的表示**: 検出されたIPアドレスを専用セクションで警告表示
+
+### 表示機能
+- **要注意IPセクション**: 検出されたIPアドレスをカード形式で表示
+- **ステータス表示**: 各IPアドレスに「正常」「要注意」のステータスを表示
+- **フィルター機能**: ステータス別（すべて/正常/要注意）でIPアドレスを絞り込み可能
+- **サマリー表示**: 要注意IPアドレスの数をサマリーに表示
+
+### データソース
+- **URLhaus**: https://urlhaus.abuse.ch/downloads/csv_online/
+- **更新頻度**: 解析実行時にリアルタイムで最新データを取得
+
 ## 多言語対応
 
 本アプリは日本語と英語の多言語対応をしています：
@@ -61,6 +83,7 @@ Access Log Tracerは、任意のログテキストからIPアドレスを抽出�
 
 ## 注意事項
 - GeoLite2データベースの再配布は禁止されています。必ず各自でダウンロードしてください。
+- URLhausのデータは解析実行時にリアルタイムで取得されます。インターネット接続が必要です。
 - 本アプリは開発用サーバー（Flaskの`app.run`）で動作します。本番運用時はgunicorn等のWSGIサーバーを推奨します。
 
 ## ディレクトリ構成
@@ -113,6 +136,8 @@ Demo page is [here](https://analyzer.oymt-dev.com).
 - Access aggregation by country and IP
 - Visualization with bar charts and world map heatmaps
 - Country filters and external IP check service integration
+- **URLhaus malicious IP address detection**
+- **IP address status display (Normal/Caution)**
 - **Multi-language support (Japanese/English)**
 
 ## Requirements
@@ -120,6 +145,7 @@ Demo page is [here](https://analyzer.oymt-dev.com).
 - Flask
 - geoip2
 - Flask-Babel
+- requests (for URLhaus data retrieval)
 
 ## Setup Instructions
 
@@ -152,6 +178,25 @@ Demo page is [here](https://analyzer.oymt-dev.com).
     ```
     - Access `http://localhost:5000` in your browser.
 
+## New Feature: URLhaus Malicious IP Address Detection
+
+This application includes functionality to detect malicious IP addresses by integrating with URLhaus database:
+
+### Detection Features
+- **Real-time detection**: Retrieves the latest malicious IP address list from URLhaus database during analysis
+- **Automatic matching**: Automatically compares extracted IP addresses from logs with URLhaus database
+- **Visual display**: Displays detected IP addresses in a dedicated warning section
+
+### Display Features
+- **Caution IP section**: Displays detected IP addresses in card format
+- **Status display**: Shows "Normal" or "Caution" status for each IP address
+- **Filter functionality**: Filter IP addresses by status (All/Normal/Caution)
+- **Summary display**: Shows count of caution IP addresses in summary
+
+### Data Source
+- **URLhaus**: https://urlhaus.abuse.ch/downloads/csv_online/
+- **Update frequency**: Retrieves latest data in real-time during analysis
+
 ## Multi-language Support
 
 This application supports both Japanese and English:
@@ -162,6 +207,7 @@ This application supports both Japanese and English:
 
 ## Important Notes
 - Redistribution of the GeoLite2 database is prohibited. Please download it yourself.
+- URLhaus data is retrieved in real-time during analysis. Internet connection is required.
 - This application runs on a development server (Flask's `app.run`). For production use, we recommend using a WSGI server like gunicorn.
 
 ## Directory Structure

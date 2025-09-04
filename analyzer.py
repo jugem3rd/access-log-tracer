@@ -20,6 +20,9 @@ import ipaddress
 from collections import Counter, defaultdict
 import geoip2.database
 import geoip2.errors
+import requests
+import csv
+import io
 
 # GeoLite2 database configuration
 # Note: For commercial use, consider upgrading to GeoIP2
@@ -34,6 +37,36 @@ except FileNotFoundError:
     reader_en = None
 
 
+def get_urlhaus_malicious_ips():
+    """URLhausから悪意のあるIPアドレスのリストを取得する"""
+    try:
+        url = "https://urlhaus.abuse.ch/downloads/csv_online/"
+        response = requests.get(url, timeout=30)
+        response.raise_for_status()
+
+        malicious_ips = set()
+        csv_reader = csv.reader(io.StringIO(response.text))
+
+        for row in csv_reader:
+            if len(row) >= 3:  # 最低限の列数があることを確認
+                # CSVの各行からIPアドレスを抽出
+                for field in row:
+                    # フィールド内のIPアドレスを検索
+                    ips = IP_PATTERN.findall(field)
+                    for ip in ips:
+                        try:
+                            # 有効なIPアドレスかチェック
+                            ipaddress.ip_address(ip)
+                            malicious_ips.add(ip)
+                        except ValueError:
+                            continue
+
+        return malicious_ips
+    except Exception as e:
+        print(f"URLhausデータの取得に失敗しました: {e}")
+        return set()
+
+
 def get_country_info(ip_address, language="ja"):
     """IPアドレスから国名と国コードを取得する"""
     if reader_ja is None or reader_en is None:
@@ -41,7 +74,8 @@ def get_country_info(ip_address, language="ja"):
 
     try:
         if ipaddress.ip_address(ip_address).is_private:
-            return "プライベートIP" if language == "ja" else "Private IP", "PR"
+            private_text = "プライベートIP" if language == "ja" else "Private IP"
+            return private_text, "PR"
 
         # 言語に応じて適切なリーダーを使用
         if language == "ja":
@@ -56,7 +90,7 @@ def get_country_info(ip_address, language="ja"):
         country_code = response.country.iso_code or "N/A"
 
         # デバッグ用ログ
-        print(f"IP: {ip_address}, Language: {language}, Country: {country_name}")
+        print(f"IP: {ip_address}, Language: {language}, " f"Country: {country_name}")
 
         return country_name, country_code
 
@@ -88,13 +122,29 @@ def analyze_log_text(log_text, language="ja"):
     ip_counter = Counter(public_ips)
     unique_ips = list(ip_counter.keys())
 
+    # URLhausから悪意のあるIPアドレスを取得
+    malicious_ips = get_urlhaus_malicious_ips()
+
+    # マッチした悪意のあるIPアドレスを特定
+    matched_malicious_ips = []
+    for ip in unique_ips:
+        if ip in malicious_ips:
+            matched_malicious_ips.append(ip)
+
     ip_to_country_info = {ip: get_country_info(ip, language) for ip in unique_ips}
 
     ip_details = []
     for ip, count in ip_counter.items():
         name, code = ip_to_country_info[ip]
+        is_malicious = ip in malicious_ips
         ip_details.append(
-            {"ip": ip, "count": count, "country_name": name, "country_code": code}
+            {
+                "ip": ip,
+                "count": count,
+                "country_name": name,
+                "country_code": code,
+                "is_malicious": is_malicious,
+            }
         )
 
     country_counts = defaultdict(
@@ -115,9 +165,11 @@ def analyze_log_text(log_text, language="ja"):
             "total_lines": len(lines),
             "total_ips_found": len(public_ips),
             "unique_ips_found": len(unique_ips),
+            "malicious_ips_found": len(matched_malicious_ips),
         },
         "ip_list": sorted(ip_details, key=lambda x: x["count"], reverse=True),
         "country_summary": sorted(
             country_summary, key=lambda x: x["count"], reverse=True
         ),
+        "malicious_ips": sorted(matched_malicious_ips),
     }

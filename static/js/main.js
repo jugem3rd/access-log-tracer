@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorAlert = document.getElementById('error-alert');
     const spinner = document.getElementById('spinner');
     const ipCheckServiceSelect = document.getElementById('ip-check-service');
+    const statusFilterSelect = document.getElementById('status-filter');
     const countryFilterContainer = document.getElementById('country-filter-container');
 
     let barChart = null;
@@ -22,23 +23,31 @@ document.addEventListener('DOMContentLoaded', () => {
             totalLines: '総行数',
             uniqueIps: 'ユニークIP数',
             totalIps: '延べIP数',
+            maliciousIps: '要注意IP数',
             selectAll: 'すべて選択/解除',
             serverError: 'サーバーでエラーが発生しました。',
             mapDataError: '地図データの読み込みに失敗しました。',
             hoverCountry: '国にカーソルを合わせてください',
             accessCount: '件',
-            accessOrigin: 'アクセス元'
+            accessOrigin: 'アクセス元',
+            status: 'ステータス',
+            malicious: '要注意',
+            normal: '正常'
         },
         en: {
             totalLines: 'Total Lines',
             uniqueIps: 'Unique IPs',
             totalIps: 'Total IPs',
+            maliciousIps: 'Caution IPs',
             selectAll: 'Select/Deselect All',
             serverError: 'An error occurred on the server.',
             mapDataError: 'Failed to load map data.',
             hoverCountry: 'Hover over a country',
             accessCount: 'counts',
-            accessOrigin: 'Access Origin'
+            accessOrigin: 'Access Origin',
+            status: 'Status',
+            malicious: 'Caution',
+            normal: 'Normal'
         }
     };
 
@@ -67,6 +76,12 @@ document.addEventListener('DOMContentLoaded', () => {
     analyzeButton.addEventListener('click', handleAnalysis);
 
     ipCheckServiceSelect.addEventListener('change', () => {
+        if (currentIpList.length > 0) {
+            handleFilterChange();
+        }
+    });
+
+    statusFilterSelect.addEventListener('change', () => {
         if (currentIpList.length > 0) {
             handleFilterChange();
         }
@@ -119,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         updateSummary(data.summary);
         populateCountryFilters(currentCountrySummary);
-
+        updateMaliciousIpsDisplay(data.malicious_ips || []);
         updateTable(currentIpList);
 
         setTimeout(() => {
@@ -180,9 +195,25 @@ document.addEventListener('DOMContentLoaded', () => {
             .filter(checkbox => checkbox.checked)
             .map(checkbox => checkbox.value);
 
-        const filteredIpList = currentIpList.filter(ipItem =>
+        // ステータスフィルターを取得
+        const statusFilter = statusFilterSelect.value;
+
+        // 国別フィルターとステータスフィルターを適用
+        let filteredIpList = currentIpList.filter(ipItem =>
             selectedCountries.includes(ipItem.country_code)
         );
+
+        // ステータスフィルターを適用
+        if (statusFilter !== 'all') {
+            filteredIpList = filteredIpList.filter(ipItem => {
+                if (statusFilter === 'malicious') {
+                    return ipItem.is_malicious === true;
+                } else if (statusFilter === 'normal') {
+                    return ipItem.is_malicious === false;
+                }
+                return true;
+            });
+        }
 
         updateTable(filteredIpList);
         updateBarChart(currentCountrySummary);
@@ -191,24 +222,33 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateSummary(summary) {
         const summarySection = document.getElementById('summary-section');
+        const maliciousCount = summary.malicious_ips_found || 0;
         summarySection.innerHTML = `
-            <div class="col-md-4 mb-2">
+            <div class="col-md-3 mb-2">
                 <div class="card bg-light p-2"><div class="card-body">
                     <h5 class="card-title">${summary.total_lines}</h5>
                     <p class="card-text">${t('totalLines')}</p>
                 </div></div>
             </div>
-            <div class="col-md-4 mb-2">
+            <div class="col-md-3 mb-2">
                 <div class="card bg-light p-2"><div class="card-body">
                     <h5 class="card-title">${summary.unique_ips_found}</h5>
                     <p class="card-text">${t('uniqueIps')}</p>
                 </div></div>
             </div>
-            <div class="col-md-4 mb-2">
+            <div class="col-md-3 mb-2">
                 <div class="card bg-light p-2"><div class="card-body">
                     <h5 class="card-title">${summary.total_ips_found}</h5>
                     <p class="card-text">${t('totalIps')}</p>
                 </div></div>
+            </div>
+            <div class="col-md-3 mb-2">
+                <div class="card ${maliciousCount > 0 ? 'bg-danger text-white' : 'bg-light'} p-2">
+                    <div class="card-body">
+                        <h5 class="card-title">${maliciousCount}</h5>
+                        <p class="card-text">${t('maliciousIps')}</p>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -224,14 +264,46 @@ document.addEventListener('DOMContentLoaded', () => {
         ipList.forEach(item => {
             const tr = document.createElement('tr');
             const link = urlTemplate.replace('{ip}', item.ip);
+            const statusClass = item.is_malicious ? 'text-danger fw-bold' : 'text-success';
+            const statusText = item.is_malicious ? t('malicious') : t('normal');
             tr.innerHTML = `
                 <td>${item.country_name} (${item.country_code})</td>
                 <td><a href="${link}" target="_blank" rel="noopener noreferrer">${item.ip}</a></td>
                 <td>${item.count}</td>
+                <td><span class="${statusClass}">${statusText}</span></td>
             `;
             fragment.appendChild(tr);
         });
         tableBody.appendChild(fragment);
+    }
+
+    function updateMaliciousIpsDisplay(maliciousIps) {
+        const maliciousSection = document.getElementById('malicious-ips-section');
+        const maliciousList = document.getElementById('malicious-ips-list');
+
+        if (maliciousIps.length > 0) {
+            maliciousSection.style.display = 'block';
+            maliciousList.innerHTML = '';
+
+            maliciousIps.forEach(ip => {
+                const ipCard = document.createElement('div');
+                ipCard.className = 'col-md-3 mb-2';
+                ipCard.innerHTML = `
+                    <div class="card border-warning">
+                        <div class="card-body text-center">
+                            <h6 class="card-title text-warning">
+                                <i class="bi bi-exclamation-triangle-fill"></i>
+                                ${ip}
+                            </h6>
+                            <small class="text-muted">URLhaus</small>
+                        </div>
+                    </div>
+                `;
+                maliciousList.appendChild(ipCard);
+            });
+        } else {
+            maliciousSection.style.display = 'none';
+        }
     }
 
     async function initializeMapAndData() {
